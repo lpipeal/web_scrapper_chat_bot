@@ -3,11 +3,11 @@
 ### 1.1. sync dependencies
 uv sync
 
-### 1.2. create environment
-uv venv --python 3.12.13
+### 1.2. Activate environment
+source .venv/scripts/activate
 
-### 1.3. Activate environment
-source .venv/bin/activate
+### 1.3. Install playwright
+playwright install
 
-### 1.4. Run Local App
+### 1.3. Run Local App
 uv run main.py
