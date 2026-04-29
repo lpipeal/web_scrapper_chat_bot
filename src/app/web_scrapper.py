@@ -171,181 +171,204 @@ import os
 import re
 from bs4 import BeautifulSoup
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
+import os
+import re
+import socket
+import logging
+from urllib.parse import urlparse
+from bs4 import BeautifulSoup
+from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode
+
+# 1. Silenciamos los logs de la librería para que no ensucien la consola
+logging.getLogger("crawl4ai").setLevel(logging.CRITICAL)
+
+def domain_exists(url):
+    """
+    Verifica si el dominio de la URL realmente existe en internet 
+    antes de intentar abrir el navegador.
+    """
+    try:
+        hostname = urlparse(url).hostname
+        if not hostname:
+            return False
+        # Intenta resolver el nombre de dominio (timeout de 2 seg)
+        socket.gethostbyname(hostname)
+        return True
+    except (socket.gaierror, socket.timeout):
+        return False
 
 async def start_scraping_process_clean(urls: list):
     output_dir = "celsia_knowledge_base_clean"
     os.makedirs(output_dir, exist_ok=True)
 
-    print(f"🚀 Iniciando consolidación de {len(urls)} fuentes...")
+    # --- PASO 1: FILTRADO DINÁMICO POR DNS ---
+    print(f"🔍 Validando {len(urls)} fuentes en la red...")
+    
+    # Filtramos: Solo dominios que existen + descartar palabras de login/acceso
+    filtered_urls = [
+        url for url in urls 
+        if domain_exists(url) and not any(k in url.lower() for k in ['login', 'password', 'acceso'])
+    ]
+
+    print(f"🚀 Iniciando proceso con {len(filtered_urls)} fuentes válidas.")
+    if len(urls) != len(filtered_urls):
+        print(f"🧹 Se ignoraron {len(urls) - len(filtered_urls)} enlaces (caídos o irrelevantes).")
 
     browser_config = BrowserConfig(headless=True, enable_stealth=True)
 
-    # Usamos BYPASS para forzar la limpieza real y no traer basura del caché
+    # --- PASO 2: CONFIGURACIÓN CON TIMEOUT ---
     run_config = CrawlerRunConfig(
         cache_mode=CacheMode.BYPASS,
+        page_timeout=20000, # 20 segundos máximo por página
         wait_for="body",
         wait_for_images=False,
-        # Eliminamos selectores redundantes aquí, ya que BeautifulSoup hará el trabajo pesado
         excluded_tags=['nav', 'footer', 'aside', 'header', 'form', 'noscript', 'svg', 'script', 'style']
     )
 
     async with AsyncWebCrawler(config=browser_config) as crawler:
-        results = await crawler.arun_many(urls=urls, config=run_config)
+        # Ejecutamos solo sobre las URLs que pasaron el filtro de DNS
+        results = await crawler.arun_many(urls=filtered_urls, config=run_config)
 
         for res in results:
+            if not res.success:
+                # Aquí ya solo entrarían errores raros, no de DNS
+                print(f"⚠️ Error inesperado en: {res.url}")
+                continue
+
+            # Nombre de archivo seguro
             clean_name = re.sub(r'https?://', '', res.url)
             clean_name = re.sub(r'[\\/*?:"<>|]', '_', clean_name).strip('_')
             file_path = os.path.join(output_dir, f"{clean_name}.txt")
-
-            if not res.success:
-                continue
 
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(f"FUENTE ORIGINAL: {res.url}\n")
                 f.write("-" * 50 + "\n\n")
 
-                # Caso redes sociales
+                # Caso Redes Sociales
                 if any(s in res.url for s in ['facebook', 'instagram', 'twitter', 'linkedin', 'youtube']):
-                    f.write("LINK OFICIAL DE RED SOCIAL: Celsia tiene presencia aquí.\n")
+                    f.write("LINK OFICIAL DE RED SOCIAL: Consultar para campañas vigentes.")
                     continue
 
-                # --- PROCESAMIENTO CON BEAUTIFULSOUP ---
+                # --- PASO 3: LIMPIEZA PROFUNDA CON BEAUTIFULSOUP ---
                 soup = BeautifulSoup(res.html, "html.parser")
 
-                # 1. Eliminar ruido global y elementos de interfaz de carruseles
-                # Quitamos selectores de paginación y navegación de sliders
-                ui_selectors = "header, footer, nav, aside, noscript, svg, script, style, .swiper-button-next, .swiper-button-prev, .swiper-pagination, .owl-nav, .owl-dots"
-                for tag in soup.select(ui_selectors):
+                # Borrar elementos de interfaz y menús móviles rebeldes
+                ui_selectors = [
+                    ".swiper-button-next", ".swiper-button-prev", ".swiper-pagination", 
+                    ".owl-nav", ".owl-dots", ".content-menu-mobile", "#header-mobile-wrapper"
+                ]
+                for selector in ui_selectors:
+                    for tag in soup.select(selector):
+                        tag.decompose()
+
+                # Contenido principal
+                main_content = soup.select_one("main") or soup.select_one("article") or soup.select_one(".content") or soup
+
+                # Quitar botones, inputs y paginadores internos
+                for tag in main_content.select("form, button, input, iframe, .pagination"):
                     tag.decompose()
 
-                # 2. Extraer contenido principal (Prioridad <main>)
-                main_content = soup.select_one("main")
-                if not main_content:
-                    main_content = soup.select_one("article") or soup.select_one(".content") or soup
-
-                # 3. Limpiar elementos internos irrelevantes (botones, inputs, etc.)
-                for tag in main_content.select("form, button, input, iframe, .pagination, .page-numbers"):
-                    tag.decompose()
-
-                # 4. Extraer texto y aplicar filtros de calidad
+                # Limpiar texto y remover duplicados de carruseles
                 raw_text = main_content.get_text(separator="\n", strip=True)
                 lines = raw_text.split('\n')
                 
                 final_lines = []
                 last_line = ""
-                
-                # Lista de frases de navegación que no aportan valor a la base vectorial
-                noise_phrases = ["ver más", "conoce más", "inicia sesión", "paga tu factura", "hablemos", "clic aquí", "subir", "centro de relevo"]
+                noise_phrases = ["ver más", "conoce más", "inicia sesión", "paga tu factura", "hablemos", "clic aquí", "subir"]
 
                 for line in lines:
                     clean_line = line.strip()
                     
-                    # A. Filtro: Omitir números de paginación de carrusel (ej: "1 / 9")
-                    if re.match(r'^\d+\s*/\s*\d+$', clean_line):
+                    # Saltar indicadores "1 / 9" y frases de navegación
+                    if re.match(r'^\d+\s*/\s*\d+$', clean_line) or clean_line.lower() in noise_phrases:
                         continue
                     
-                    # B. Filtro: Omitir frases de ruido UI
-                    if clean_line.lower() in noise_phrases:
-                        continue
-                    
-                    # C. Filtro: Evitar duplicados consecutivos (clones de sliders) y líneas vacías
+                    # Evitar duplicados seguidos (clones de sliders)
                     if clean_line != last_line and len(clean_line) > 1:
                         final_lines.append(clean_line)
                         last_line = clean_line
 
-                # 5. Unir y normalizar saltos de línea
-                text = '\n\n'.join(final_lines)
-                f.write(text)
+                f.write('\n\n'.join(final_lines))
 
-            print(f"✅ Guardado y Limpio: {clean_name}.txt")
+            print(f"✅ Procesado: {clean_name}.txt")
 
-    print(f"\n✨ Proceso terminado. Los archivos en '{output_dir}' están listos para tu base vectorial.")
+    print(f"\n✨ ¡Listo! Revisa la carpeta: '{output_dir}'")
 
 
 async def start_scraping_process_markdown(urls: list[str]) -> list[dict]:
-        
-    # Esquema universal para componentes de International 
+    # --- PASO 1: VALIDACIÓN DNS Y FILTRADO ---
+    print(f"🔍 Validando {len(urls)} dominios en la red...")
+    ignore_keywords = ['login', 'kiosco', 'bienvenida', 'password', 'acceso']
+    
+    filtered_urls = [
+        url for url in urls 
+        if domain_exists(url) and not any(key in url.lower() for key in ignore_keywords)
+    ]
+    
+    print(f"🚀 Procesando {len(filtered_urls)} URLs válidas (Se descartaron {len(urls) - len(filtered_urls)}).")
+
+    # --- PASO 2: CONFIGURACIÓN CRAWLER ---
     config = CrawlerRunConfig(
-                cache_mode=CacheMode.ENABLED,
-                excluded_tags=['nav', 'footer', 'aside', 'header', 'form',],
-                excluded_selector=['.adsbygoogle', '.popup-ad', '#subscribe-modal', '.btn', '.button', '.nav', '.footer', '.header'],
-                # wait_for=".main",
-                js_code="window.scrollTo(0, document.body.scrollHeight);", # Forzamos carga de componentes lazy
-                # css_selector="#content",
-                remove_overlay_elements=True,
-                exclude_external_images=True,
-                exclude_social_media_links=True,
-                exclude_social_media_domains=[
-                    'facebook.com',
-                    'twitter.com',
-                    'x.com',
-                    'linkedin.com',
-                    'instagram.com',
-                    'pinterest.com',
-                    'tiktok.com',
-                    'snapchat.com',
-                    'reddit.com',
-                ],
-                markdown_generator=DefaultMarkdownGenerator(
-                    content_filter=PruningContentFilter(threshold=0.48, threshold_type="fixed", min_word_threshold=0),
-                    options={
-                        "ignore_links": True
-                    }
-                    
-                ),
-            )    
-    
-    
+        cache_mode=CacheMode.BYPASS, # BYPASS para asegurar que la limpieza se aplique a HTML fresco
+        excluded_tags=['nav', 'footer', 'aside', 'header', 'form', 'noscript', 'svg', 'script', 'style'],
+        excluded_selector=['.adsbygoogle', '.popup-ad', '#subscribe-modal', '.btn', '.button'],
+        js_code="window.scrollTo(0, document.body.scrollHeight);",
+        remove_overlay_elements=True,
+        exclude_external_images=True,
+        exclude_social_media_links=True,
+        markdown_generator=DefaultMarkdownGenerator(
+            content_filter=PruningContentFilter(threshold=0.48, threshold_type="fixed", min_word_threshold=0),
+            options={"ignore_links": True}
+        ),
+    )    
+
+
     dispatcher = MemoryAdaptiveDispatcher(
-        memory_threshold_percent=70.0,
-        check_interval=1.0,
-        # max_session_permit=10,
-        # monitor=CrawlerMonitor(
-        #     display_mode=DisplayMode.DETAILED
-        # )
-    )
-    
+    memory_threshold_percent=90.0,  # Sube el límite al 90% (antes 70%)
+    check_interval=2.0,           # Revisa cada 2 segundos en lugar de 1
+    max_session_permit=5          # LIMITA a 5 pestañas máximo abiertas a la vez
+)
+
     async with AsyncWebCrawler() as crawler:
-        # Ejemplo con la serie CV
         results = await crawler.arun_many(
-            urls=urls,
+            urls=filtered_urls,
             config=config,
             dispatcher=dispatcher,
+            # --- Añade esto ---
+            concurrency_count=5,           # No más de 5 procesos paralelos
+            stream=False                   # Si son muchísimas URLs (ej. > 500), considera poner True
         )
+    return await process_result_markdown(results)
 
-    return await process_result(results)
-    
 
-async def process_result(results) -> list[dict]:
-    # Creamos la carpeta de destino si no existe
+async def process_result_markdown(results) -> list[dict]:
     output_dir = "celsia_knowledge_base_markdown"
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
     
     for res in results:
-            # 1. Generar un nombre de archivo seguro basado en la URL
-            # Ejemplo: https://celsia.com/es/pymes -> es_pymes.txt
-            clean_name = re.sub(r'https?://', '', res.url)
-            clean_name = re.sub(r'[\\/*?:"<>|]', '_', clean_name).strip('_')
-            file_path = os.path.join(output_dir, f"{clean_name}.txt")
+                # 1. Generar un nombre de archivo seguro basado en la URL
+                # Ejemplo: https://celsia.com/es/pymes -> es_pymes.txt
+                clean_name = re.sub(r'https?://', '', res.url)
+                clean_name = re.sub(r'[\\/*?:"<>|]', '_', clean_name).strip('_')
+                file_path = os.path.join(output_dir, f"{clean_name}.md")
 
-            if res.success:
-                with open(file_path, "w", encoding="utf-8") as f:
-                    f.write(f"FUENTE ORIGINAL: {res.url}\n")
-                    f.write("-" * 50 + "\n\n")
-                    
-                    # Si es red social, guardamos una nota informativa
-                    if any(social in res.url for social in ['facebook', 'instagram', 'twitter', 'linkedin', 'youtube']):
-                        f.write(f"LINK OFICIAL DE RED SOCIAL: Celsia tiene presencia aquí. ")
-                        f.write("Consultar manualmente para actualizaciones de campañas en tiempo real.")
-                    else:
-                        # Si es web, guardamos el Markdown (ideal para RAG/LLM)
-                        # f.write(res.markdown)
-                        if hasattr(res, 'fit_markdown') and res.fit_markdown:
-                            # f.write(res.fit_markdown)
-                            f.write(res.markdown.fit_markdown) # Intentamos usar el resumen inteligente
-                            
+                if res.success:
+                    with open(file_path, "w", encoding="utf-8") as f:
+                        f.write(f"FUENTE ORIGINAL: {res.url}\n")
+                        f.write("-" * 50 + "\n\n")
+                        
+                        # Si es red social, guardamos una nota informativa
+                        if any(social in res.url for social in ['facebook', 'instagram', 'twitter', 'linkedin', 'youtube']):
+                            f.write(f"LINK OFICIAL DE RED SOCIAL: Celsia tiene presencia aquí. ")
+                            f.write("Consultar manualmente para actualizaciones de campañas en tiempo real.")
                         else:
-                            f.write(res.markdown) # Respaldo por si falla
-                
-                print(f"✅ Guardado: {clean_name}.txt")
+                            # Si es web, guardamos el Markdown (ideal para RAG/LLM)
+                            # f.write(res.markdown)
+                            if hasattr(res, 'fit_markdown') and res.fit_markdown:
+                                # f.write(res.fit_markdown)
+                                f.write(res.markdown.fit_markdown) # Intentamos usar el resumen inteligente
+                                
+                            else:
+                                f.write(res.markdown) # Respaldo por si falla
+                    
+                    print(f"✅ Guardado: {clean_name}.md")
