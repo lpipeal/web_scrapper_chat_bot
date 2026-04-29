@@ -1,5 +1,6 @@
-#Integrantes:
-###**Julián Payán Potes  </br> Luis Felipe Alvarez  </br> Sebastian Mena  </br> Mario Andrés Ramírez Navarro**
+# Integrantes:
+
+### **Julián Payán Potes  </br> Luis Felipe Alvarez  </br> Sebastian Mena  </br> Mario Andrés Ramírez Navarro**
 
 
 # Plan de Trabajo: Asistente Virtual para Celsia - Módulo 1
