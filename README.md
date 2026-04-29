@@ -14,3 +14,6 @@ uv run main.py
 
 ### 1.3. Run Local App
 streamlit run app.py
+
+
+

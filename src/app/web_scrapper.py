@@ -1,7 +1,6 @@
 
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CrawlerRunConfig, CacheMode, DefaultMarkdownGenerator, MemoryAdaptiveDispatcher, PruningContentFilter
 
-
 async def web_scraping_init(url: str):
     urls = await get_seed_urls_with_social_networks(url)
     await start_scraping_process_clean(urls)
@@ -140,31 +139,6 @@ async def get_seed_urls_with_social_networks(url: str ):
             print(f"🎯 Total consolidado: {len(final_urls)} URLs (incluyendo Redes Sociales).")
             return list(final_urls)
 
-
-
-
-# # --- LÓGICA DE PROCESAMIENTO MASIVO ---
-async def start_scraping_process_simple(urls: list):
-    """
-    Procesa la lista de URLs descargando el contenido de cada una.
-    """
-    print(f"🚀 Iniciando scraping de {len(urls)} URLs...")
-    
-    # Configuración de rastreo para las páginas finales
-    run_config = CrawlerRunConfig(
-        cache_mode=CacheMode.BYPASS, # Ahorra ancho de banda si ya la vimos
-        word_count_threshold=10,        # Evita páginas vacías
-    )
-
-    async with AsyncWebCrawler() as crawler:
-        # Crawl4AI maneja la concurrencia internamente si le pasamos una lista
-        results = await crawler.arun_many(urls=urls, config=run_config)
-        
-        # Aquí procesas los resultados (guardar en BD, JSON, etc.)
-        for res in results:
-            if res.success:
-                # Aquí iría tu lógica de guardado: DB.save(res.markdown)
-                print(f"✅ Procesado: {res.url} | Tamaño: {len(res.markdown)} chars")
 
 
 import os

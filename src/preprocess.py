@@ -2,7 +2,7 @@ import asyncio
 import os
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-async def create_master_context(input_dir="celsia_knowledge_base_clean"):
+async def create_master_context(input_dir, output_file):
     all_text = ""
     # 1. Leer todos los archivos limpios
     for filename in os.listdir(input_dir):
@@ -21,7 +21,7 @@ async def create_master_context(input_dir="celsia_knowledge_base_clean"):
     chunks = text_splitter.split_text(all_text)
     
     # 3. Guardar el contexto consolidado para el prompt
-    with open("master_context.txt", "w", encoding="utf-8") as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         f.write("\n\n".join(chunks))
     
     print(f"✅ Contexto preparado: {len(chunks)} fragmentos generados.")
@@ -30,21 +30,17 @@ if __name__ == "__main__":
     asyncio.run(create_master_context())
 
 
-
-import os
-import re
-
-async def create_master_context_clean(ruta_carpeta, archivo_salida):
+async def create_master_context_clean(input_dir: str, output_file: str):
     contenido_unico = set()
     documentos_procesados = []
 
     # 1. Leer todos los archivos de la carpeta
-    archivos = [f for f in os.listdir(ruta_carpeta) if f.endswith(('.txt', '.md'))]
+    archivos = [f for f in os.listdir(input_dir) if f.endswith(('.txt', '.md'))]
     
     print(f"Procesando {len(archivos)} archivos...")
 
     for nombre_archivo in archivos:
-        with open(os.path.join(ruta_carpeta, nombre_archivo), "r", encoding="utf-8") as f:
+        with open(os.path.join(input_dir, nombre_archivo), "r", encoding="utf-8") as f:
             lineas = f.readlines()
             
             texto_limpio = []
@@ -70,14 +66,44 @@ async def create_master_context_clean(ruta_carpeta, archivo_salida):
                 documentos_procesados.append(f"--- INFO DE: {nombre_archivo} ---\n" + "\n".join(texto_limpio))
 
     # 4. Guardar el resultado final
-    with open(archivo_salida, "w", encoding="utf-8") as f:
+    with open(output_file, "w", encoding="utf-8") as f:
         f.write("\n\n".join(documentos_procesados))
     
-    print(f"✅ ¡Hecho! Archivo creado: {archivo_salida}")
+    print(f"✅ ¡Hecho! Archivo creado: {output_file}")
     print(f"Se eliminaron miles de caracteres repetidos.")
-
-# Ejecución (asegúrate de que la carpeta 'data' es donde tienes tus txt)
-# await create_master_context_clean("tu_carpeta_de_documentos", "master_context_clean.txt")
 
 if __name__ == "__main__":
     asyncio.run(create_master_context_clean())
+
+# async def create_master_context_clean(input_dir: str, output_file: str):
+#     """
+#     Lee todos los archivos .txt de la carpeta de conocimiento y los 
+#     une en un solo archivo maestro para que la IA lo lea.
+#     """
+#     print(f"📂 Consolidando archivos desde: {input_dir}...")
+    
+#     try:
+#         # Lista todos los archivos .txt en la carpeta
+#         files = [f for f in os.listdir(input_dir) if f.endswith('.txt')]
+        
+#         if not files:
+#             print("⚠️ No se encontraron archivos para consolidar.")
+#             return
+
+#         with open(output_file, "w", encoding="utf-8") as outfile:
+#             for i, filename in enumerate(files):
+#                 file_path = os.path.join(input_dir, filename)
+                
+#                 with open(file_path, "r", encoding="utf-8") as infile:
+#                     contenido = infile.read()
+                    
+#                     # Agregamos un separador claro entre documentos para el LLM
+#                     outfile.write(f"\n\n--- DOCUMENTO {i+1}: {filename} ---\n")
+#                     outfile.write(contenido)
+#                     outfile.write("\n" + "="*50 + "\n")
+        
+#         print(f"✅ ¡Éxito! Archivo maestro creado: {output_file}")
+        
+#     except Exception as e:
+#         print(f"❌ Error al crear el contexto maestro: {e}")
+

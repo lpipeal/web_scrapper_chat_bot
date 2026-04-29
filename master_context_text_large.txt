@@ -30,46 +30,6 @@ Inicia Sesión | Portal Clientes Celsia Hogares
 
 Paga tus Facturas de Energía | Celsia Hogares
 
---- DOCUMENTO: empresas.celsia.com.txt ---
-FUENTE ORIGINAL: https://empresas.celsia.com
---------------------------------------------------
-
-Celsia Empresas
-
-Cerrar
-
-close
-
-Estamos en mantenimiento, mejoramos tu experiencia.
-
-Celsia Empresas
-
-Cerrar
-
-close
-
-Estamos en mantenimiento, mejoramos tu experiencia.
-
-Estamos realizando una mejora temporal en el portal. En este momento el acceso no está disponible mientras ajustamos algunos detalles para brindarte una mejor experiencia. Por favor intenta nuevamente en unos minutos. Gracias por tu comprensión.
-
-Si tienes dudas escríbenos a canal preferencial 3103361353
-
-Cerrar
-
-close
-
-Registro exitoso
-
-Tu cuenta ha sido creada correctamente.
-
-Celsia Empresas
-
-Gestiona tu energía de manera inteligente y eficiente
-
-Acceso
-
-Gestiona tu portal empresarial
-
 --- DOCUMENTO: nube.celsia.com_4443_clientes_bienvenida.txt ---
 FUENTE ORIGINAL: https://nube.celsia.com:4443/clientes/bienvenida
 --------------------------------------------------
@@ -78,21 +38,13 @@ Portal de Clientes Celsia | Gestión de Servicios de Energía
 
 ¡Te damos la bienvenida a Zona Clientes!
 
+¡Te damos la bienvenida a Zona Clientes!
+
 ¿Necesitas ayuda?
 
 Cuéntanos
 
 Pagos
-
-Acuerdos de pago
-
-Estado de cuenta e históricos
-
-Mis documentos
-
-Factura digital
-
-Reporte de daños
 
 Acuerdos de pago
 
@@ -148,9 +100,9 @@ Estado de cuenta e históricos
 
 Mis documentos
 
-Factura digital
+Cuéntanos
 
-Reporte de daños
+Pagos
 
 Acuerdos de pago
 
@@ -1306,6 +1258,8 @@ Nuevo portafolio
 
 Solicitudes frecuentes
 
+Contáctenos
+
 Nuestras acciones en el Tolima
 
 Conoce aquí las acciones que estamos adelantando para mejorar la calidad de tu servicio.
@@ -1332,7 +1286,7 @@ Constructoras
 
 Proyectos particulares
 
-Proyectos de uso de infraestructura
+o permiso de uso de la red
 
 Conexiones Complejas:
 
@@ -22187,8 +22141,6 @@ Energía Solar
 Movilidad Eléctrica
 
 Contáctenos
-
-Inversionistas Celsia Colombia
 
 Compañías del Grupo Empresarial Argos lideran por noveno año consecutivo el Índice de Sostenibilidad Dow Jones
 

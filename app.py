@@ -1,92 +1,147 @@
-from langchain_ollama import ChatOllama
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 import streamlit as st
+from langchain_ollama import ChatOllama
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from tavily import TavilyClient
 import os
+import requests
 
-# 1. Configuración de la Interfaz
-st.set_page_config(page_title="Celsia AI Assistant", page_icon="⚡", layout="wide")
+# 1. Funciones de utilidad (Ollama y Tavily)
+def get_ollama_models():
+    try:
+        response = requests.get("http://localhost:11434/api/tags")
+        return [model["name"] for model in response.json()["models"]] if response.status_code == 200 else []
+    except:
+        return []
 
-# ESTILOS CORREGIDOS
-st.markdown("""
-    <style>
-    .main {
-        background-color: #f5f5f5;
-    }
-    </style>
-    """, unsafe_allow_html=True) 
+def buscar_en_web(query, api_key):
+    try:
+        tavily = TavilyClient(api_key=api_key)
+        respuesta = tavily.search(query=f"Celsia Colombia {query}", search_depth="advanced")
+        contexto = "\n\n--- INFO WEB RECIENTE ---\n"
+        for res in respuesta['results']:
+            contexto += f"- {res['content']} (Fuente: {res['url']})\n"
+        return contexto
+    except Exception as e:
+        return f"\n(Error Web: {e})\n"
 
-st.title("⚡ Celsia Knowledge Assistant")
-st.subheader("Consulta información oficial sobre la red, trámites y sostenibilidad.")
+# --- INTERFAZ STREAMLIT ---
+st.set_page_config(page_title="Celsia AI Expert", page_icon="⚡", layout="wide")
 
-# 2. Cargar el Contexto Consolidado
-# Asegúrate de que el archivo 'master_context_clean.txt' contenga todo lo que me mostraste
+with st.sidebar:
+    st.title("🚀 Configuración Avanzada")
+    
+    # A. Selección de IA
+    tipo_modelo = st.selectbox("Proveedor", ["Local (Ollama)", "Online (Gemini)"])
+    
+    # B. Parámetros de Generación (Sliders)
+    st.subheader("🎛️ Parámetros de la IA")
+    
+    temperatura = st.slider(
+        "Temperatura", 0.0, 1.0, 0.0, 0.1,
+        help="Controla la aleatoriedad: 0 es preciso, 1 es creativo."
+    )
+    
+    top_p = st.slider(
+        "Top P (Nucleus Sampling)", 0.0, 1.0, 0.9, 0.1,
+        help="Controla la diversidad: valores bajos filtran palabras poco probables."
+    )
+    
+    st.divider()
+
+    # C. Búsqueda Web
+    usar_tavily = st.toggle("🔍 Usar Tavily (Web Search)")
+    tavily_key = st.text_input("Tavily API Key", type="password") if usar_tavily else None
+
+    # D. Detalles del Modelo
+    st.divider()
+    if tipo_modelo == "Local (Ollama)":
+        modelos = get_ollama_models()
+        nombre_modelo = st.selectbox("Modelo Local", modelos) if modelos else st.text_input("Modelo", "gemma")
+    else:
+        google_key = st.text_input("Google API Key", type="password")
+        nombre_modelo = st.selectbox("Versión Gemini", ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-3-flash-preview"])
+
+    st.divider()
+    prompt_sys = st.text_area("System Prompt", value="Eres el experto de Celsia. Responde usando los datos proporcionados.")
+
+
+# --- LÓGICA DEL CHAT ---
+st.title("⚡ Celsia Intel Assistant")
+st.info(f"Modelo: {nombre_modelo} | Temp: {temperatura} | Top-P: {top_p}")
+
+# Carga de archivos locales
 @st.cache_data
-def load_full_context():
-    if os.path.exists("master_context.txt"):
-        with open("master_context.txt", "r", encoding="utf-8") as f:
-            return f.read()
-    return "No se encontró la base de conocimientos."
+def load_local_data():
+    for f in ["master_context_text.txt"]:
+        if os.path.exists(f):
+            with open(f, "r", encoding="utf-8") as file: return file.read()
+    return "Sin base local."
 
-contexto_completo = load_full_context()
+contexto_local = load_local_data()
 
-# 3. Inicializar el Modelo Ollama
-# Ajustamos num_ctx para aprovechar tu ventana de tokens
-llm = ChatOllama(
-    # model="gemma4:e4b", # Asegúrate de que este sea el nombre exacto en 'ollama list'
-    model="mistral", # O cambia a "llama3" o "mistral" si prefieres
-    temperature=0,
-    num_ctx=4096, # Aunque tengas 128k, 32k suele ser más que suficiente y más rápido
-)
-
-# 4. Prompt Engineering (El Cerebro)
-prompt_sistema = f"""
-Eres el Asistente Virtual Inteligente de Celsia (empresa del Grupo Argos). 
-Tu misión es resolver dudas de usuarios basándote EXCLUSIVAMENTE en el contexto proporcionado.
-
-INSTRUCCIONES DE COMPORTAMIENTO:
-1. Usa el contexto para responder sobre: Pagos, facturas digitales, trámites de autogeneración, subestaciones (Estambul y Las Palmas), y servicios Pymes.
-2. Si el usuario pregunta algo que NO está en el texto (ej. "precio del dólar"), responde: 
-   "Lo siento, como asistente de Celsia solo puedo ayudarte con información relacionada a nuestros servicios de energía e internet. Para ese dato, te sugiero consultar fuentes externas."
-3. Si mencionas las subestaciones de Palmira, destaca la inversión de $130 mil millones.
-4. Mantén un tono corporativo pero amable.
-
-CONTEXTO DE CELSIA:
-{contexto_completo}
-"""
-
-# 5. Historial de Chat
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Mostrar mensajes previos
 for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
+    with st.chat_message(msg["role"]): st.markdown(msg["content"])
 
-# 6. Lógica de Interacción
-if user_input := st.chat_input("Escribe tu pregunta sobre Celsia aquí..."):
-    # Agregar pregunta del usuario
+if user_input := st.chat_input("¿Qué deseas consultar sobre Celsia?"):
     st.session_state.messages.append({"role": "user", "content": user_input})
-    with st.chat_message("user"):
-        st.markdown(user_input)
+    with st.chat_message("user"): st.markdown(user_input)
 
-    # Generar respuesta de la IA
     with st.chat_message("assistant"):
-        with st.spinner("Buscando en la base de conocimientos de Celsia..."):
-            try:
-                # Construimos la estructura de mensajes para LangChain
-                messages = [
-                    SystemMessage(content=prompt_sistema),
-                    HumanMessage(content=user_input)
-                ]
-                
-                # Invocación al modelo local
-                response = llm.invoke(messages)
-                full_response = response.content
-                
-                st.markdown(full_response)
-                st.session_state.messages.append({"role": "assistant", "content": full_response})
+        with st.spinner("Pensando..."):
             
+            # Obtener datos de Tavily si aplica
+            contexto_web = buscar_en_web(user_input, tavily_key) if usar_tavily and tavily_key else ""
+            
+            # Unir todo
+            prompt_completo = f"{prompt_sys}\n\nCONTEXTO LOCAL:\n{contexto_local}\n\n{contexto_web}"
+            
+            try:
+                # Configurar LLM con Temperatura y Top_P
+                if tipo_modelo == "Local (Ollama)":
+                    llm = ChatOllama(
+                        model=nombre_modelo, 
+                        temperature=temperatura,
+                        top_p=top_p  # Parámetro aplicado
+                    )
+                else:
+                    llm = ChatGoogleGenerativeAI(
+                        model=nombre_modelo, 
+                        google_api_key=google_key, 
+                        temperature=temperatura,
+                        top_p=top_p  # Parámetro aplicado
+
+                    )
+                
+                msgs = [SystemMessage(content=prompt_completo)]
+                for m in st.session_state.messages[-3:]:
+                    msgs.append(HumanMessage(content=m["content"]) if m["role"]=="user" else AIMessage(content=m["content"]))
+                
+            #     res = llm.invoke(msgs)
+            #     st.markdown(res.content)
+            #     st.session_state.messages.append({"role": "assistant", "content": res.content})
+                
+            # except Exception as e:
+            #     st.error(f"Error: {e}")
+                res = llm.invoke(msgs)
+                    
+                    # --- NUEVA LÓGICA DE LIMPIEZA ---
+                respuesta_final = ""
+                    
+                # Si res.content es una lista, extraemos el campo 'text'
+                if isinstance(res.content, list):
+                     # Unimos todos los fragmentos de texto por si Gemini devuelve varios
+                    respuesta_final = "".join([part.get('text', '') for part in res.content if isinstance(part, dict)])
+                else:
+                        # Si ya es un string, lo dejamos como está
+                    respuesta_final = res.content
+                    # -------------------------------
+
+                    st.markdown(respuesta_final)
+                    st.session_state.messages.append({"role": "assistant", "content": respuesta_final})
+                    
             except Exception as e:
-                st.error(f"Hubo un error con Ollama: {e}")
-                st.info("Asegúrate de tener Ollama corriendo en segundo plano (`ollama serve`).")
+                st.error(f"Error: {e}")
