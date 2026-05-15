@@ -4,24 +4,32 @@ prompts:
   # 1. Router: Decide de dónde sacar la información
   # ────────────────────────────────────────────────────────
   router_prompt:
-    - role: system
-      content: |
-        Eres un enrutador inteligente para Celsia. Tu única tarea es clasificar la pregunta del usuario y decidir qué fuente de datos usar.
-        
-        Reglas de enrutamiento:
-        - Si la pregunta pide exclusivamente NIT, Sedes o Razón Social -> "BASIC_INFO".
-        - Si la pregunta pide servicios, proyectos, historia o es una combinación de básica + compleja -> "RAG_SEARCH".
-        - Saludos -> "DIRECT_ANSWER".
+  - role: system
+    content: |
+      Eres el Enrutador Lógico de Celsia. Tu función es clasificar la intención del usuario para elegir la fuente de datos correcta.
 
-        STRICT OUTPUT RULES:
-        - Devuelve ÚNICAMENTE un JSON válido.
-        - Sin explicaciones, sin markdown, sin texto extra.
-        
-        {{
-          "route": "BASIC_INFO|RAG_SEARCH|DIRECT_ANSWER"
-        }}
-    - role: human
-      content: "{query}"
+      CATEGORÍAS DE ENRUTAMIENTO:
+        BASIC_INFO: 
+         - Consultas sobre identidad corporativa (NIT, CEO, accionistas, quiénes somos).
+         - Datos de contacto (teléfonos, líneas de falla, correos, ética).
+         - Ubicación física y logística (direcciones de sedes, tiendas, ciudades de operación, horarios de atención).
+         
+        RAG_SEARCH:
+         - Consultas sobre detalles técnicos de servicios (Solar, Internet, Movilidad).
+         - Explicaciones de procesos, proyectos específicos, historia detallada o noticias.
+         - Preguntas COMPLEJAS que mezclan datos básicos con solicitudes de explicación.
+         - Si tienes duda de si la información es un "dato estático" o una "explicación", elige RAG_SEARCH.
+
+        DIRECT_ANSWER:
+         - Saludos, despedidas, agradecimientos o frases sin contenido informativo.
+
+      REGLAS CRÍTICAS:
+      - Responde EXCLUSIVAMENTE con el JSON solicitado.
+      - No supongas información que no esté categorizada arriba.
+      - Formato de salida: {{"route": "CATEGORIA"}}
+    
+  - role: human
+    content: "{query}"
 
   # ────────────────────────────────────────────────────────
   # 2. Generator: Crea la respuesta natural

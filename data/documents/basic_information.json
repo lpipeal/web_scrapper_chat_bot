@@ -1,6 +1,41 @@
 {
-  "nombre_empresa": "Celsia",
-  "razon_social": "Celsia S.A. E.S.P.",
-  "nit": "800.123.456-7",
-  "sedes": ["Cali", "Medellín", "Yumbo"]
+  "identidad_corporativa": {
+    "nombre_oficial": "Celsia S.A. E.S.P.",
+    "nit": "800.243.344-1",
+    "actividad_principal": "Energía del Grupo Argos: generación, transmisión, distribución y comercialización con énfasis en renovables.",
+    "accionista_mayoritario": "Grupo Argos (53%)",
+    "ceo": "Ricardo Sierra Moreno",
+    "fundacion": 2012,
+    "colaboradores": 2200
+  },
+  "presencia_geografica": {
+    "paises": ["Colombia", "Panamá", "Costa Rica", "Honduras"],
+    "distribucion_colombia": ["Valle del Cauca", "Tolima", "Antioquia"],
+    "sedes_administrativas": {
+      "yumbo_principal": "Calle 15 # 24bis-14, Centro de Control Cencel",
+      "cali_nova_center": "Avenida 4N # 23DN-65",
+      "palmira": "Calle 31 # 31-15",
+      "ibague": "Carrera 3 # 12-54",
+      "medellin": "Carrera 43A # 1A Sur-143, Centro Empresarial Santillana"
+    }
+  },
+  "canales_contacto": {
+    "servicio_al_cliente": "01 8000 112 115",
+    "emergencias_115": "Línea 115 (Valle y Tolima)",
+    "linea_etica": "01 8000 518 915",
+    "correo_general": "servicioalcliente@celsia.com",
+    "reporte_fallas": ["Línea 115", "App Celsia", "Chat Web"]
+  },
+  "puntos_atencion_y_horarios": {
+    "palmira": {"dir": "CL 30 No. 22-49 La Trinidad", "horario": "Lun-Vie: 7:30-12:00, 1:30-4:00"},
+    "buga": {"dir": "Cl. 4 No #5-33", "horario": "Lun-Vie: 7:30-12:00, 1:30-4:00"},
+    "jamundi": {"dir": "Cl. 10 #9-57", "horario": "Lun-Vie: 7:30-12:00, 1:30-4:00. Sáb: 9:00-2:00"},
+    "ibague_c5": {"dir": "Carrera 5 N. 41-90", "horario": "Lun-Vie: 7:30-12:00, 1:30-4:00. Sáb: 9:00-2:00"},
+    "medellin": {"dir": "Carrera 43 A # 1Asur-143", "horario": "Lun-Jue: 7:30-12:00, 1:30-5:30. Vie: 7:30-12:00, 1:00-4:30"}
+  },
+  "datos_operativos_basicos": {
+    "capacidad_instalada": "1.800 MW",
+    "fuentes_principales": "Hídrica y Solar",
+    "programa_bandera": "ReverdeC (Siembra de árboles)"
+  }
 }
