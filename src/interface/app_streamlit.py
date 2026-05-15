@@ -1,5 +1,5 @@
 import streamlit as st
-from run_rag import app_graph
+from run_batch import app_graph
 from langchain_core.messages import HumanMessage, AIMessage
 import uuid
 
@@ -60,13 +60,21 @@ def main():
                 config = {"configurable": {"thread_id": st.session_state.thread_id}}
                 
                 # Ejecutar el grafo de LangGraph
+                user_query = st.session_state.messages[-1].content 
+
                 final_state = app_graph.invoke(
-                    {"messages": st.session_state.messages},
+                    {
+                        "query": user_query,
+                        "context_data": "",
+                        "route": ""
+                    },
                     config=config
                 )
                 
                 # Obtener el último mensaje del estado (la respuesta del AI)
-                response_text = final_state["messages"][-1].content
+                # response_text = final_state["messages"][-1].content
+                # st.markdown(response_text)
+                response_text = final_state.get("final_answer", "Lo siento, hubo un error al procesar la respuesta.")
                 st.markdown(response_text)
                 
                 # Guardar respuesta en el historial

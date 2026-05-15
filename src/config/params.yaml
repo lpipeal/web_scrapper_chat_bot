@@ -1,0 +1,8 @@
+rag:
+  k_retrieval: 4
+  vector_size: 768
+  distance_metric: "COSINE"
+paths:
+  clean_data: "data/celsia_knowledge_base_clean"
+  markdown_data: "data/celsia_knowledge_base_markdown"
+  basic_info_json: "data/documents/basic_information.json"

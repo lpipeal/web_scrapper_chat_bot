@@ -1,0 +1,6 @@
+{
+  "nombre_empresa": "Celsia",
+  "razon_social": "Celsia S.A. E.S.P.",
+  "nit": "800.123.456-7",
+  "sedes": ["Cali", "Medellín", "Yumbo"]
+}

@@ -27,3 +27,40 @@ Atención al Cliente y "Preguntas Trampa" (Para probar alucinaciones):
 18. ¿Dónde están ubicadas las oficinas principales de atención al usuario?
 19. [Trampa] ¿A qué precio están vendiendo las acciones de Ecopetrol hoy? (El bot debe decir que no sabe).
 20. [Trampa] ¿Puedo comprar un paquete de televisión por cable con Celsia? (El bot debe aclarar que ofrecen internet, no TV por cable, o decir que no tiene info si no está en el texto).
+
+
+
+## Questions V2
+1. Pruebas de Información Básica (JSON)
+Estas preguntas deberían activar el nodo basic_info. Son datos precisos y estructurados.
+
+"¿Cuál es el NIT oficial de Celsia?"
+
+"¿En qué ciudades tienen sedes registradas?"
+
+"Dime la razón social completa de la empresa."
+
+2. Pruebas de Conocimiento Detallado (RAG/Qdrant)
+Estas preguntas obligan al bot a buscar en los documentos que scrapeaste. Aquí verás qué tan bien se hizo la limpieza de texto y la creación de fragmentos.
+
+"¿Qué tipo de soluciones solares ofrece Celsia para empresas?"
+
+"¿Cómo funciona el servicio de eficiencia energética?"
+
+"¿Tienen proyectos de movilidad eléctrica o estaciones de carga?"
+
+"¿Qué beneficios mencionan sobre el uso de energías renovables?"
+
+3. Pruebas de "Estrés" (Consultas Mixtas)
+Estas son las más interesantes porque el Router debe decidir si prioriza el RAG o el JSON.
+
+"Dame el NIT de la empresa y explícame brevemente qué hacen con la energía eólica."
+
+"¿Celsia tiene sede en Cali? Si es así, ¿qué proyectos de alumbrado público manejan?"
+
+4. Pruebas de Cortesía y Fallbacks
+Para ver si el bot mantiene la personalidad o si el flujo de direct_answer funciona.
+
+"Hola, ¿quién eres y en qué puedes ayudarme?"
+
+"¿Cuál es el clima hoy en Cali?" (Aquí debería decirte educadamente que solo sabe de Celsia).

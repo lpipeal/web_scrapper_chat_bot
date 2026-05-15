@@ -9,13 +9,22 @@ source .venv/scripts/activate
 ### 1.3. Install playwright
 playwright install
 
-### 1.3. Run Local App
-uv run main.py
+### 1.4. Install playwright
+Modificar
+.env.example
 
-### 1.3. Run Local App
-streamlit run app.py
+Dejarlo y poner sus credenciales
+.env
+
+### 1.5. Run Local Batch App
+uv run run_batch.py
+
+### 1.6. Run Local App
+streamlit run  run_app.py
 
 
+
+## No necesario instalarlo por ahora
 ### Ejecutar en power shell como administrador (si no no funciona)
 choco install graphviz -y
 
