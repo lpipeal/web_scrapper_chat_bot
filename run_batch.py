@@ -4,8 +4,6 @@ from src.rag.custom_quadrant_vector_store import CustomQdrantVectorStore
 from src.context.agent_context import AgentContext
 from src.rag.rag_solution import RAGSolution
 from src.graph_solution.graph_factory import CelsiaWorkflow
-# from src.graph_solution.graph import CelsiaWorkflow
-
 from src.web_scraper.web_scrapper import web_scraping_init
 
 
@@ -40,28 +38,49 @@ def get_agent_app():
 # Variable global para que otros archivos puedan importar
 app_graph, rag_engine, context = get_agent_app()
 
-
-
 async def main():
+        try:
+            # 1. Scraper: Genera los archivos en 'data/celsia_knowledge_base_clean'
+            print("🔍 Iniciando Scraping...")
+            await web_scraping_init(
+                "https://www.celsia.com/es/mapa-del-sitio/", 
+                output_dir_clean="data/celsia_knowledge_base_clean", 
+                output_dir_markdown="data/celsia_knowledge_base_markdown"
+            )
 
-    try:
-        # 1. Scraper (Opcional, se puede comentar si los datos ya existen)
-        await web_scraping_init("https://www.celsia.com/es/mapa-del-sitio/", 
-                                 output_dir_clean="data/celsia_knowledge_base_clean", 
-                                 output_dir_markdown="data/celsia_knowledge_base_markdown")
+            # 2. PROCESAMIENTO DE VECTORES (Aquí es donde usas tu RAGSolution)
+            # La primera vez pon re_ingest=True para llenar la base de datos.
+            # Después puedes ponerlo en False para ahorrar tiempo si no han cambiado los archivos.
+            print("\n🧠 Procesando base de conocimientos...")
+            rag_engine.prepare_knowledge_base(re_ingest=True) 
 
-        # 6. Ejecución
-        print("\n🤖 Bot de Celsia Online. Haz tu pregunta:")
-        query = "¿Cuál es el NIT y qué servicios tienen para empresas?"
-        
-        result = await app_graph.ainvoke({"query": query})
-        print(f"\n--- RESPUESTA ---\n{result['final_answer']}")
+            # 3. Ejecución del Agente
+            print("\n🤖 Bot de Celsia Online. Haz tu pregunta:")
+            query = "¿Cuál es el NIT y qué servicios tienen para empresas?"
+            
+            # Enviamos el estado inicial con el mensaje humano
+            from langchain_core.messages import HumanMessage
+            config = {"configurable": {"thread_id": "sesion_probar_rag"}}
+            
+            result = await app_graph.ainvoke(
+                {
+                    "query": query, 
+                    "messages": [HumanMessage(content=query)], 
+                    "context_data": "", 
+                    "route": ""
+                },
+                config=config
+            )
+            
+            print(f"\n--- RESPUESTA ---\n{result['final_answer']}")
 
-        print(app_graph.get_graph().draw_ascii())
-    
-    finally:
-        if hasattr(context.vector_store, 'close'):
-            context.vector_store.close()
+            # Debug: Imprime la estructura del grafo para verificar que todo esté correcto
+            print(app_graph.get_graph().draw_ascii())
+
+        finally:
+            # Cerramos a través del rag_engine que ya tiene el método close()
+            rag_engine.close()
 
 if __name__ == "__main__":
+    import asyncio
     asyncio.run(main())

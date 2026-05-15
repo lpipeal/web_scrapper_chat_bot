@@ -22,7 +22,8 @@ uv run run_batch.py
 ### 1.6. Run Local App
 streamlit run  run_app.py
 
-
+### 1.7. Run Test Local App
+uv run test_rag.py
 
 ## No necesario instalarlo por ahora
 ### Ejecutar en power shell como administrador (si no no funciona)
