@@ -16,4 +16,11 @@ uv run main.py
 streamlit run app.py
 
 
+### Ejecutar en power shell como administrador (si no no funciona)
+choco install graphviz -y
 
+### Ejecutar dentro del proyecto
+    uv pip install pygraphviz \
+    --config-settings="--global-option=build_ext" \
+    --config-settings="--global-option=-I/c/Program Files/Graphviz/include" \
+    --config-settings="--global-option=-L/c/Program Files/Graphviz/lib"

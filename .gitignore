@@ -12,3 +12,9 @@ wheels/
 
 celsia_knowledge_base_clean
 celsia_knowledge_base_markdown
+
+# Environment variables
+.env
+
+
+data/vectorial_database/
