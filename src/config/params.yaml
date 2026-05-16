@@ -1,5 +1,12 @@
+model:
+  temperature: 0.1
+  top_p: 0.9
+  
+embeddings:
+  model_name: "nomic-embed-text-v2-moe:latest"
+
 rag:
-  k_retrieval: 4
+  k_retrieval: 6
   vector_size: 768
   distance_metric: "COSINE"
 paths:
