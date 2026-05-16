@@ -40,6 +40,10 @@ Estas preguntas deberían activar el nodo basic_info. Son datos precisos y estru
 
 "Dime la razón social completa de la empresa."
 
+Cuales son las sedes administrativas?
+
+lineas de atención
+
 2. Pruebas de Conocimiento Detallado (RAG/Qdrant)
 Estas preguntas obligan al bot a buscar en los documentos que scrapeaste. Aquí verás qué tan bien se hizo la limpieza de texto y la creación de fragmentos.
 

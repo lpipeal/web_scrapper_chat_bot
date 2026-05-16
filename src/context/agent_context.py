@@ -3,11 +3,12 @@ from typing import Dict
 from langchain_core.prompts import ChatPromptTemplate
 
 class AgentContext:
-    def __init__(self, llm, embeddings, vector_store, basic_info_path: str):
+    def __init__(self, llm, embeddings, vector_store, basic_info_path: str, k_docs: int):
         self.llm = llm
         self.embeddings = embeddings
         self.vector_store = vector_store
         self.basic_info_path = basic_info_path
+        self.k_docs = k_docs
         
         # Centralizamos la carga de YAMLs
         self.params = self._load_yaml("src/config/params.yaml")

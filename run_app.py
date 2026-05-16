@@ -24,7 +24,7 @@ import streamlit as st
 # from langchain_core.messages import HumanMessage, AIMessage
 # import uuid
 
-from src.interface.app_streamlit import main
+from src.interface.app_streamlit_new import main
 
 if __name__ == "__main__":
     main()

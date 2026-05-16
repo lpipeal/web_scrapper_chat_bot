@@ -1,0 +1,6 @@
+[theme]
+primaryColor = "#F37021" # El naranja oficial de Celsia
+backgroundColor = "#eaeaea38" # Fondo blanco puro para el área principal
+secondaryBackgroundColor = "#E58F5C" # Gris muy claro para el panel lateral (Sidebar)
+textColor = "#2B2B2B" # Texto gris oscuro (más elegante que el negro puro)
+font = "sans serif"
