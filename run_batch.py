@@ -40,19 +40,22 @@ app_graph, rag_engine, context = get_agent_app()
 
 async def main():
         try:
+            re_ingest = False  # Cambia a False después de la primera ejecución para ahorrar tiempo
+            
             # 1. Scraper: Genera los archivos en 'data/celsia_knowledge_base_clean'
-            print("🔍 Iniciando Scraping...")
-            await web_scraping_init(
-                "https://www.celsia.com/es/mapa-del-sitio/", 
-                output_dir_clean="data/celsia_knowledge_base_clean", 
-                output_dir_markdown="data/celsia_knowledge_base_markdown"
-            )
+            if re_ingest:
+                print("🔍 Iniciando Scraping...")
+                await web_scraping_init(
+                    "https://www.celsia.com/es/mapa-del-sitio/", 
+                    output_dir_clean="data/celsia_knowledge_base_clean", 
+                    output_dir_markdown="data/celsia_knowledge_base_markdown"
+                )
 
-            # 2. PROCESAMIENTO DE VECTORES (Aquí es donde usas tu RAGSolution)
-            # La primera vez pon re_ingest=True para llenar la base de datos.
-            # Después puedes ponerlo en False para ahorrar tiempo si no han cambiado los archivos.
-            print("\n🧠 Procesando base de conocimientos...")
-            rag_engine.prepare_knowledge_base(re_ingest=True) 
+                # 2. PROCESAMIENTO DE VECTORES (Aquí es donde usas tu RAGSolution)
+                # La primera vez pon re_ingest=True para llenar la base de datos.
+                # Después puedes ponerlo en False para ahorrar tiempo si no han cambiado los archivos.
+                print("\n🧠 Procesando base de conocimientos...")
+                rag_engine.prepare_knowledge_base(re_ingest=False) 
 
             # 3. Ejecución del Agente
             print("\n🤖 Bot de Celsia Online. Haz tu pregunta:")

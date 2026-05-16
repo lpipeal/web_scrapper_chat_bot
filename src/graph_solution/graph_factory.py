@@ -1,4 +1,5 @@
 import json
+from langchain_core.messages import AIMessage
 from langgraph.graph import StateGraph, START, END
 from src.context.agent_context import AgentContext
 from src.graph_solution.state import CelsiaAgentState
@@ -50,15 +51,30 @@ class RAGSearchNode:
 
 class GeneratorNode:
     def __init__(self, context: AgentContext):
+        # Esto es lo que falta para que acepte GeneratorNode(self.context)
         self.context = context
-        self.prompt = context.get_prompt("generator_prompt")
-
     def __call__(self, state: CelsiaAgentState):
-        print(f"DEBUG: Generando respuesta con contexto: {state['context_data']}")
-        chain = self.prompt | self.context.llm
-        result = chain.invoke({"query": state["query"], "context_data": state["context_data"]})
-        return {"final_answer": result.content}
+        # Inyectamos el contexto recuperado como un mensaje de sistema temporal
+        system_prompt = (
+            "Eres un asistente de Celsia. Usa el contexto para responder, "
+            "pero mantén la fluidez basándote en la conversación previa."
+        )
+        
+        context_msg = f"CONTEXTO ACTUAL: {state['context_data']}"
+        
+        # Combinamos: Sistema + Contexto + Historial de mensajes
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "system", "content": context_msg}
+        ] + state["messages"]
 
+        response = self.context.llm.invoke(messages)
+
+        # Retornamos la respuesta final y actualizamos la lista de mensajes
+        return {
+            "final_answer": response.content,
+            "messages": [response] # LangGraph lo añade al historial automáticamente
+        }  
 
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
@@ -116,4 +132,4 @@ class CelsiaWorkflow:
 
         memory = MemorySaver()
 
-        return workflow.compile()    
+        return workflow.compile(checkpointer=memory)    

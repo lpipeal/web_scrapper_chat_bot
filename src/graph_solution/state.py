@@ -6,7 +6,6 @@ from langgraph.graph import add_messages
 from litellm import TypedDict
 
 class CelsiaAgentState(TypedDict):
-    messages: List # Para guardar el historial si lo necesitas
     messages: Annotated[List[BaseMessage], add_messages]
     query: str
     route: str            # La decisión del router

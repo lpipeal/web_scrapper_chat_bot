@@ -1,17 +1,17 @@
 import streamlit as st
-from run_batch import app_graph
-from langchain_core.messages import HumanMessage, AIMessage
 import uuid
+from langchain_core.messages import HumanMessage, AIMessage
+from run_batch import app_graph
 
 def main():
     # --- CONFIGURACIÓN DE PÁGINA ---
     st.set_page_config(
-        page_title="Asistente Corporativo Valle del Cauca",
+        page_title="Asistente Corporativo Celsia",
         page_icon="🤖",
         layout="centered"
     )
 
-    # Estilo personalizado para un look "bonito"
+    # Estilo personalizado
     st.markdown("""
         <style>
         .stChatMessage { border-radius: 15px; margin-bottom: 10px; }
@@ -20,27 +20,30 @@ def main():
         </style>
     """, unsafe_allow_html=True)
 
-    st.title("🤖 Asistente Inteligente Corporativo")
-    st.caption("Arquitectura RAG Avanzada con LangGraph & Gemini")
+    st.title("🤖 Asistente Inteligente Celsia")
+    st.caption("Arquitectura con Memoria de Corto Plazo (LangGraph + Checkpointer)")
 
     # --- GESTIÓN DE ESTADO (MEMORIA) ---
+    # El thread_id es la "llave" de la memoria en la base de datos/checkpointer
     if "thread_id" not in st.session_state:
         st.session_state.thread_id = str(uuid.uuid4())
 
+    # Historial para mostrar en la UI de Streamlit
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # --- SIDEBAR - PANEL DE CONTROL ---
+    # --- SIDEBAR ---
     with st.sidebar:
-        st.header("Configuración")
-        st.info("Este agente utiliza memoria de corto plazo y un router lógico para decidir cuándo consultar la base de datos Qdrant.")
-        if st.button("Limpiar Historial"):
+        st.header("Panel de Control")
+        st.write(f"**Sesión ID:** `{st.session_state.thread_id}`")
+        
+        if st.button("🗑️ Nueva Conversación"):
             st.session_state.messages = []
             st.session_state.thread_id = str(uuid.uuid4())
             st.rerun()
 
     # --- CHAT INTERFACE ---
-    # Mostrar mensajes anteriores
+    # Renderizar historial
     for msg in st.session_state.messages:
         role = "user" if isinstance(msg, HumanMessage) else "assistant"
         with st.chat_message(role):
@@ -48,41 +51,38 @@ def main():
 
     # Entrada del usuario
     if prompt := st.chat_input("¿En qué puedo ayudarte hoy?"):
-        # Guardar y mostrar mensaje del usuario
+        # 1. Crear el mensaje de humano
         user_msg = HumanMessage(content=prompt)
+        
+        # 2. Mostrarlo inmediatamente en la UI
         st.session_state.messages.append(user_msg)
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Generación de respuesta con Spinner
+        # 3. Generación con el Grafo
         with st.chat_message("assistant"):
-            with st.spinner("Consultando base de conocimientos y razonando..."):
+            with st.spinner("Razonando con memoria..."):
+                # Configuración necesaria para que el Checkpointer sepa qué hilo recuperar
                 config = {"configurable": {"thread_id": st.session_state.thread_id}}
                 
-                # Ejecutar el grafo de LangGraph
-                user_query = st.session_state.messages[-1].content 
-
+                # Invocación enviando el mensaje en la lista 'messages'
+                # IMPORTANTE: Enviamos el objeto mensaje, no solo el string
                 final_state = app_graph.invoke(
                     {
-                        "query": user_query,
+                        "query": prompt, 
+                        "messages": [user_msg], # add_messages lo unirá al historial previo
                         "context_data": "",
                         "route": ""
                     },
                     config=config
                 )
                 
-                # Obtener el último mensaje del estado (la respuesta del AI)
-                # response_text = final_state["messages"][-1].content
-                # st.markdown(response_text)
-                response_text = final_state.get("final_answer", "Lo siento, hubo un error al procesar la respuesta.")
+                # 4. Extraer respuesta
+                response_text = final_state.get("final_answer", "No pude procesar una respuesta.")
                 st.markdown(response_text)
                 
-                # Guardar respuesta en el historial
+                # 5. Guardar respuesta del asistente en el historial de la UI
                 st.session_state.messages.append(AIMessage(content=response_text))
 
-    # Pie de página técnico
     st.divider()
-    st.caption("Powered by LangChain | LangGraph | Qdrant | Gemini 1.5 Flash")
-
-if __name__ == "__main__":
-    main()
+    st.caption("Celsia Agent | LangGraph Memory Enabled")
